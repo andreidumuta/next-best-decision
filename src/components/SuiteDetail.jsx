@@ -786,7 +786,7 @@ export default function SuiteDetail({ suiteId, database, onBack, onUpdateDecisio
                 <div style={{ 
                   display: 'flex', 
                   gap: '0.5rem', 
-                  borderTop: '1px dashed rgba(99, 102, 241, 0.2)', 
+                  borderTop: '1px dashed rgba(6, 78, 59, 0.2)', 
                   paddingTop: '1.25rem',
                   justifyContent: 'flex-end',
                   alignItems: 'center'

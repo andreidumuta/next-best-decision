@@ -551,7 +551,7 @@ export default function App() {
               backgroundColor: 'var(--color-primary)',
               borderColor: 'var(--color-primary)',
               color: 'white',
-              boxShadow: '0 4px 14px rgba(99, 102, 241, 0.35)',
+              boxShadow: '0 4px 14px rgba(6, 78, 59, 0.35)',
               display: 'flex',
               alignItems: 'center',
               gap: '0.4rem',

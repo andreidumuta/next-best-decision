@@ -10,13 +10,13 @@
   --text-secondary: #45464d;
   --text-muted: #76777d;
   
-  --color-primary: #000000;
-  --color-primary-light: #eceef0;
-  --color-primary-dark: #191c1e;
-  --color-primary-border: #c6c6cd;
+  --color-primary: #064e3b;
+  --color-primary-light: #e6f4ea;
+  --color-primary-dark: #022c22;
+  --color-primary-border: #a7f3d0;
   
-  --color-secondary-container: #d5e3fd;
-  --color-on-secondary-container: #57657b;
+  --color-secondary-container: #d1fae5;
+  --color-on-secondary-container: #064e3b;
   
   --color-success: #15803d;
   --color-success-bg: #f0fdf4;
@@ -549,8 +549,8 @@ a {
 
 /* AI Recommendation Card */
 .ai-decision-card {
-  background: linear-gradient(135deg, #fbfbfe 0%, #f4f5fc 100%);
-  border: 1px solid #dbe2ff;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+  border: 1px solid var(--color-primary-border);
   border-left: 5px solid var(--color-primary);
   border-radius: var(--border-radius-lg);
   padding: 2rem;
@@ -567,7 +567,7 @@ a {
   width: 250px;
   height: 250px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(99,102,241,0.06) 0%, rgba(99,102,241,0) 70%);
+  background: radial-gradient(circle, rgba(6,78,59,0.06) 0%, rgba(6,78,59,0) 70%);
   pointer-events: none;
 }
 
