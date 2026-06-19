@@ -292,7 +292,7 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
       {/* Page Header */}
       <div className="page-header" style={{ marginBottom: '2rem' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{ 
               backgroundColor: 'var(--color-primary-light)', 
               color: 'var(--color-primary)', 
@@ -305,27 +305,6 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
               <Calculator size={24} />
             </div>
             <h1 className="page-title" style={{ margin: 0 }}>Pricing & Elasticity Simulator</h1>
-            {onSuiteChange && (
-              <div style={{ marginLeft: '1rem' }}>
-                <select
-                  className="form-control"
-                  value={suiteId}
-                  onChange={(e) => onSuiteChange(e.target.value)}
-                  style={{
-                    padding: '0.35rem 0.75rem',
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                    backgroundColor: 'var(--bg-card)',
-                    borderColor: 'var(--color-primary-border)',
-                    borderRadius: 'var(--border-radius-sm)',
-                  }}
-                >
-                  {suites.map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
           </div>
           <p className="page-subtitle" style={{ marginTop: '0.25rem' }}>
             Model pricing optimization and customer churn sensitivity using price elasticity curves for <strong>{suite?.name || 'Cybersecurity'}</strong>.
@@ -354,19 +333,37 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
               </button>
             </div>
 
-            {/* Product Selector */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '1.75rem', backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Select Product Tier to Model:</label>
-              <select 
-                className="form-control" 
-                style={{ padding: '0.5rem', fontSize: '0.9rem', width: '100%', marginTop: '0.25rem' }}
-                value={selectedSimProduct}
-                onChange={(e) => handleSimProductChange(e.target.value)}
-              >
-                {suiteProducts.map(p => (
-                  <option key={p.id} value={p.id}>{p.name} (${p.price}/mo - {p.tier.toUpperCase()} tier)</option>
-                ))}
-              </select>
+            {/* Suite & Product Selectors */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.75rem', backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+              {onSuiteChange && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Select Product Suite:</label>
+                  <select
+                    className="form-control"
+                    style={{ padding: '0.5rem', fontSize: '0.9rem', width: '100%', marginTop: '0.25rem' }}
+                    value={suiteId}
+                    onChange={(e) => onSuiteChange(e.target.value)}
+                  >
+                    {suites.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Select Product Tier to Model:</label>
+                <select 
+                  className="form-control" 
+                  style={{ padding: '0.5rem', fontSize: '0.9rem', width: '100%', marginTop: '0.25rem' }}
+                  value={selectedSimProduct}
+                  onChange={(e) => handleSimProductChange(e.target.value)}
+                >
+                  {suiteProducts.map(p => (
+                    <option key={p.id} value={p.id}>{p.name} (${p.price}/mo - {p.tier.toUpperCase()} tier)</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
 
