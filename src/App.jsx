@@ -12,7 +12,12 @@ import {
   LayoutDashboard,
   BrainCircuit,
   Lock,
-  AlertTriangle
+  AlertTriangle,
+  Bell,
+  Percent,
+  Calculator,
+  LogOut,
+  User
 } from 'lucide-react';
 
 export default function App() {
@@ -122,6 +127,52 @@ export default function App() {
     setCurrentView('SUITE_DETAIL');
   };
 
+  if (!isLoggedIn) {
+    return (
+      <div className="login-container">
+        <form className="login-card" onSubmit={(e) => { e.preventDefault(); setIsLoggedIn(true); }}>
+          <div className="login-header">
+            <div className="login-logo">NBD</div>
+            <h1 className="login-title">DecisionEngine</h1>
+            <p className="login-subtitle">Next Best Decision Platform</p>
+          </div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="form-group">
+              <label>Email Address</label>
+              <input 
+                type="email" 
+                className="form-control" 
+                required 
+                placeholder="andrei@nextbestdecision.com" 
+                defaultValue="andrei@nextbestdecision.com"
+              />
+            </div>
+            
+            <div className="form-group">
+              <label>Password</label>
+              <input 
+                type="password" 
+                className="form-control" 
+                required 
+                placeholder="••••••••" 
+                defaultValue="password123"
+              />
+            </div>
+          </div>
+
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', fontWeight: 600 }}>
+            Sign In to Enterprise Division
+          </button>
+          
+          <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            Authorized personnel only. Sessions are audited.
+          </div>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div className="app-container">
       {/* Premium Navigation Header */}
@@ -132,128 +183,204 @@ export default function App() {
         </div>
 
         <div className="nav-actions">
+          <div className="session-badge">
+            <span className="session-dot"></span>
+            Secured Session
+          </div>
           <button 
-            className={`btn ${currentView === 'DASHBOARD' || currentView === 'SUITE_DETAIL' ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => { setCurrentView('DASHBOARD'); setSelectedSuiteId(null); }}
+            className="material-symbols-outlined text-secondary hover:bg-surface-container-low p-2 rounded-full" 
+            style={{ padding: '0.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            title="Lock system"
+            onClick={() => { setIsLoggedIn(false); setCurrentView('DASHBOARD'); setSelectedSuiteId(null); }}
           >
-            <LayoutDashboard size={16} />
-            Dashboard
+            <Lock size={18} />
           </button>
-          
           <button 
-            className={`btn ${currentView === 'STRATEGY_HUB' ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => { setCurrentView('STRATEGY_HUB'); setSelectedSuiteId(null); }}
-            style={{ 
-              borderColor: 'var(--color-primary-light)',
-              backgroundColor: currentView === 'STRATEGY_HUB' ? 'var(--color-primary)' : '#f0f4ff',
-              color: currentView === 'STRATEGY_HUB' ? 'white' : 'var(--color-primary-dark)'
-            }}
+            className="material-symbols-outlined text-secondary hover:bg-surface-container-low p-2 rounded-full" 
+            style={{ padding: '0.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            title="Notifications"
           >
-            <BrainCircuit size={16} />
-            PM Strategy Hub
+            <Bell size={18} />
           </button>
-          
-          <button 
-            className={`btn ${currentView === 'ADMIN' ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setCurrentView('ADMIN')}
-          >
-            <Settings size={16} />
-            Admin Catalog
-          </button>
-          
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            paddingLeft: '1rem',
-            marginLeft: '1rem',
-            borderLeft: '1px solid var(--border-color)',
-            fontSize: '0.875rem',
-            color: 'var(--text-secondary)'
-          }}>
-            <div style={{
-              width: '8px',
-              height: '8px',
-              backgroundColor: 'var(--color-success)',
-              borderRadius: '50%'
-            }}></div>
-            <span>Secured Session</span>
+          <div className="profile-avatar">
+            <img 
+              alt="A professional headshot of a female executive in a minimalist business suit, lit by soft studio lighting with a neutral gray background." 
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnLaTVAglz6Ne8ugvffIqDBsyuGQfUde-IYflfoQH2S2DhsMdruLPFYLkju41dbtbpzXeW0GDp2kEXfH0NjzJ-6W5j2kGb_zIQnwtQeLQVAqNvILlOC-iy54cI73WSpsc9JbqEhQabVYmQPrnjzTnt1lo3AxLRuyqxjYwi0d3cSH8kj4QTs5CUr5BIeJRwhClAKV1m285I_Cl6NaaBAt2oLufQq17QlNciqznPwFDU8ECu9quafACLvG5Ba5r1KKjEW9_HB2nh1o8" 
+            />
           </div>
         </div>
       </header>
 
-      {/* Main Content Render */}
-      <main className="main-content">
-        {currentView === 'DASHBOARD' && (
-          <Dashboard 
-            database={database} 
-            onSelectSuite={navigateToSuite} 
-            onUpdateDecisionState={handleUpdateDecisionState}
-            onUpdateDecisionFeedback={handleUpdateDecisionFeedback}
-          />
-        )}
-        
-        {currentView === 'SUITE_DETAIL' && (
-          <SuiteDetail 
-            suiteId={selectedSuiteId} 
-            database={database} 
-            onBack={() => { setCurrentView('DASHBOARD'); setSelectedSuiteId(null); }} 
-            onUpdateDecisionState={handleUpdateDecisionState}
-            onUpdateDecisionFeedback={handleUpdateDecisionFeedback}
-            onNavigateToSimulator={() => setCurrentView('REVENUE_SIMULATOR')}
-            onNavigateToElasticitySimulator={() => setCurrentView('ELASTICITY_SIMULATOR')}
-          />
-        )}
+      <div className="app-layout">
+        {/* Left Navigation Sidebar */}
+        <aside className="sidebar">
+          <div className="sidebar-profile">
+            <div className="profile-initials">CE</div>
+            <div className="profile-info">
+              <span className="profile-role">Category Manager</span>
+              <span className="profile-dept">Enterprise Division</span>
+            </div>
+          </div>
 
-        {currentView === 'REVENUE_SIMULATOR' && (
-          <RevenueSimulator 
-            suiteId={selectedSuiteId} 
-            database={database} 
-            onBack={() => setCurrentView('SUITE_DETAIL')}
-          />
-        )}
+          <nav className="sidebar-menu">
+            <div 
+              className={`sidebar-link ${currentView === 'DASHBOARD' || currentView === 'SUITE_DETAIL' ? 'active' : ''}`}
+              onClick={() => { setCurrentView('DASHBOARD'); setSelectedSuiteId(null); }}
+            >
+              <LayoutDashboard size={18} />
+              <span>Overview</span>
+            </div>
 
-        {currentView === 'ELASTICITY_SIMULATOR' && (
-          <ElasticitySimulator 
-            suiteId={selectedSuiteId} 
-            database={database} 
-            onBack={() => setCurrentView('SUITE_DETAIL')}
-          />
-        )}
+            <div 
+              className={`sidebar-link ${currentView === 'ELASTICITY_SIMULATOR' ? 'active' : ''}`}
+              onClick={() => {
+                setCurrentView('ELASTICITY_SIMULATOR');
+                if (!selectedSuiteId && database.suites.length > 0) {
+                  setSelectedSuiteId(database.suites[0].id);
+                }
+              }}
+            >
+              <Percent size={18} />
+              <span>Pricing Simulator</span>
+            </div>
 
-        {currentView === 'ADMIN' && (
-          <AdminPanel 
-            database={database} 
-            onUpdateDb={handleUpdateDatabase} 
-          />
-        )}
+            <div 
+              className={`sidebar-link ${currentView === 'REVENUE_SIMULATOR' ? 'active' : ''}`}
+              onClick={() => {
+                setCurrentView('REVENUE_SIMULATOR');
+                if (!selectedSuiteId && database.suites.length > 0) {
+                  setSelectedSuiteId(database.suites[0].id);
+                }
+              }}
+            >
+              <Calculator size={18} />
+              <span>Revenue Simulator</span>
+            </div>
 
-        {currentView === 'STRATEGY_HUB' && (
-          <StrategyHub 
-            database={database}
-            onSaveHubContent={handleSaveHubContent}
-            onBack={() => setCurrentView('DASHBOARD')}
-          />
-        )}
-      </main>
+            <div 
+              className={`sidebar-link ${currentView === 'STRATEGY_HUB' ? 'active' : ''}`}
+              onClick={() => { setCurrentView('STRATEGY_HUB'); setSelectedSuiteId(null); }}
+            >
+              <BrainCircuit size={18} />
+              <span>Strategy Hub</span>
+            </div>
 
-      {/* Footer Branding */}
-      <footer style={{
-        textAlign: 'center',
-        padding: '2rem',
-        borderTop: '1px solid var(--border-color)',
-        backgroundColor: 'var(--bg-card)',
-        fontSize: '0.8rem',
-        color: 'var(--text-muted)',
-        marginTop: 'auto'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-          <BrainCircuit size={16} />
-          <strong>Next Best Decision Platform</strong>
+            <div 
+              className={`sidebar-link ${currentView === 'ADMIN' ? 'active' : ''}`}
+              onClick={() => { setCurrentView('ADMIN'); setSelectedSuiteId(null); }}
+            >
+              <Settings size={18} />
+              <span>Admin Catalog</span>
+            </div>
+          </nav>
+
+          <div className="sidebar-footer">
+            <div 
+              className="sidebar-link"
+              onClick={() => {
+                setIsLoggedIn(false);
+                setCurrentView('DASHBOARD');
+                setSelectedSuiteId(null);
+              }}
+              style={{ color: 'var(--color-danger)' }}
+            >
+              <LogOut size={18} />
+              <span>Sign Out</span>
+            </div>
+          </div>
+        </aside>
+
+        {/* Right Main Container */}
+        <div className="main-container">
+          <main className="main-content">
+            {currentView === 'DASHBOARD' && (
+              <Dashboard 
+                database={database} 
+                onSelectSuite={navigateToSuite} 
+                onUpdateDecisionState={handleUpdateDecisionState}
+                onUpdateDecisionFeedback={handleUpdateDecisionFeedback}
+              />
+            )}
+            
+            {currentView === 'SUITE_DETAIL' && (
+              <SuiteDetail 
+                suiteId={selectedSuiteId} 
+                database={database} 
+                onBack={() => { setCurrentView('DASHBOARD'); setSelectedSuiteId(null); }} 
+                onUpdateDecisionState={handleUpdateDecisionState}
+                onUpdateDecisionFeedback={handleUpdateDecisionFeedback}
+                onNavigateToSimulator={() => setCurrentView('REVENUE_SIMULATOR')}
+                onNavigateToElasticitySimulator={() => setCurrentView('ELASTICITY_SIMULATOR')}
+              />
+            )}
+
+            {currentView === 'REVENUE_SIMULATOR' && (
+              <RevenueSimulator 
+                key={selectedSuiteId || 'revenue-default'}
+                suiteId={selectedSuiteId || database.suites[0].id} 
+                database={database} 
+                onBack={() => {
+                  if (selectedSuiteId) {
+                    setCurrentView('SUITE_DETAIL');
+                  } else {
+                    setCurrentView('DASHBOARD');
+                  }
+                }}
+                onSuiteChange={(id) => setSelectedSuiteId(id)}
+              />
+            )}
+
+            {currentView === 'ELASTICITY_SIMULATOR' && (
+              <ElasticitySimulator 
+                key={selectedSuiteId || 'elasticity-default'}
+                suiteId={selectedSuiteId || database.suites[0].id} 
+                database={database} 
+                onBack={() => {
+                  if (selectedSuiteId) {
+                    setCurrentView('SUITE_DETAIL');
+                  } else {
+                    setCurrentView('DASHBOARD');
+                  }
+                }}
+                onSuiteChange={(id) => setSelectedSuiteId(id)}
+              />
+            )}
+
+            {currentView === 'ADMIN' && (
+              <AdminPanel 
+                database={database} 
+                onUpdateDb={handleUpdateDatabase} 
+              />
+            )}
+
+            {currentView === 'STRATEGY_HUB' && (
+              <StrategyHub 
+                database={database}
+                onSaveHubContent={handleSaveHubContent}
+                onBack={() => setCurrentView('DASHBOARD')}
+              />
+            )}
+          </main>
+
+          {/* Footer Branding */}
+          <footer style={{
+            textAlign: 'center',
+            padding: '2rem',
+            borderTop: '1px solid var(--border-color)',
+            backgroundColor: 'var(--bg-card)',
+            fontSize: '0.8rem',
+            color: 'var(--text-muted)',
+            marginTop: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+              <BrainCircuit size={16} />
+              <strong>Next Best Decision Platform</strong>
+            </div>
+            <div>Built for Cybersecurity Category Management and Dynamic Pricing Simulation.</div>
+            <div style={{ marginTop: '0.5rem' }}>© 2026 Next Best Decision Inc. All rights reserved.</div>
+          </footer>
         </div>
-        <div>Built for Cybersecurity Category Management and Dynamic Pricing Simulation.</div>
-        <div style={{ marginTop: '0.5rem' }}>© 2026 Next Best Decision Inc. All rights reserved.</div>
-      </footer>
+      </div>
 
       {/* Element Selector Banner */}
       {isSelectingElement && (

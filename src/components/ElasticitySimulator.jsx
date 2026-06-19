@@ -12,7 +12,7 @@ import {
   Percent
 } from 'lucide-react';
 
-export default function ElasticitySimulator({ suiteId, database, onBack }) {
+export default function ElasticitySimulator({ suiteId, database, onBack, onSuiteChange }) {
   const { suites, products } = database;
   const suite = suites.find(s => s.id === suiteId);
   const suiteProducts = products.filter(p => p.suiteId === suiteId);
@@ -292,7 +292,7 @@ export default function ElasticitySimulator({ suiteId, database, onBack }) {
       {/* Page Header */}
       <div className="page-header" style={{ marginBottom: '2rem' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             <div style={{ 
               backgroundColor: 'var(--color-primary-light)', 
               color: 'var(--color-primary)', 
@@ -305,9 +305,30 @@ export default function ElasticitySimulator({ suiteId, database, onBack }) {
               <Calculator size={24} />
             </div>
             <h1 className="page-title" style={{ margin: 0 }}>Pricing & Elasticity Simulator</h1>
+            {onSuiteChange && (
+              <div style={{ marginLeft: '1rem' }}>
+                <select
+                  className="form-control"
+                  value={suiteId}
+                  onChange={(e) => onSuiteChange(e.target.value)}
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    backgroundColor: 'var(--bg-card)',
+                    borderColor: 'var(--color-primary-border)',
+                    borderRadius: 'var(--border-radius-sm)',
+                  }}
+                >
+                  {suites.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
           <p className="page-subtitle" style={{ marginTop: '0.25rem' }}>
-            Model pricing optimization and customer churn sensitivity using price elasticity curves for <strong>{suite.name}</strong>.
+            Model pricing optimization and customer churn sensitivity using price elasticity curves for <strong>{suite?.name || 'Cybersecurity'}</strong>.
           </p>
         </div>
       </div>

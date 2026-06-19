@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DecisionEngine | Next Best Decision</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-container": "#d5e3fd",
+                    "on-tertiary-fixed-variant": "#38485d",
+                    "tertiary-fixed": "#d3e4fe",
+                    "on-secondary-container": "#57657b",
+                    "inverse-surface": "#2d3133",
+                    "on-primary-fixed": "#131b2e",
+                    "on-error": "#ffffff",
+                    "primary": "#000000",
+                    "primary-container": "#131b2e",
+                    "surface-variant": "#e0e3e5",
+                    "secondary-fixed": "#d5e3fd",
+                    "surface-tint": "#565e74",
+                    "secondary": "#515f74",
+                    "primary-fixed": "#dae2fd",
+                    "tertiary": "#000000",
+                    "tertiary-fixed-dim": "#b7c8e1",
+                    "outline": "#76777d",
+                    "inverse-on-surface": "#eff1f3",
+                    "on-secondary": "#ffffff",
+                    "on-primary-fixed-variant": "#3f465c",
+                    "on-tertiary-container": "#75859d",
+                    "on-background": "#191c1e",
+                    "on-primary-container": "#7c839b",
+                    "surface-container-low": "#f2f4f6",
+                    "error-container": "#ffdad6",
+                    "surface-dim": "#d8dadc",
+                    "surface": "#f7f9fb",
+                    "error": "#ba1a1a",
+                    "inverse-primary": "#bec6e0",
+                    "surface-container-high": "#e6e8ea",
+                    "tertiary-container": "#0b1c30",
+                    "on-tertiary-fixed": "#0b1c30",
+                    "surface-bright": "#f7f9fb",
+                    "surface-container": "#eceef0",
+                    "surface-container-highest": "#e0e3e5",
+                    "on-secondary-fixed": "#0d1c2f",
+                    "on-tertiary": "#ffffff",
+                    "background": "#f7f9fb",
+                    "on-secondary-fixed-variant": "#3a485c",
+                    "on-error-container": "#93000a",
+                    "on-surface": "#191c1e",
+                    "on-surface-variant": "#45464d",
+                    "on-primary": "#ffffff",
+                    "outline-variant": "#c6c6cd",
+                    "primary-fixed-dim": "#bec6e0",
+                    "secondary-fixed-dim": "#b9c7e0"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "section-gap": "40px",
+                    "component-padding-md": "16px",
+                    "component-padding-sm": "8px",
+                    "unit": "4px",
+                    "container-margin": "32px",
+                    "gutter": "24px",
+                    "component-padding-lg": "24px"
+            },
+            "fontFamily": {
+                    "title-sm": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "label-caps": ["Inter"],
+                    "data-mono": ["JetBrains Mono"],
+                    "display-lg-mobile": ["Inter"],
+                    "body-md": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "headline-md": ["Inter"]
+            },
+            "fontSize": {
+                    "title-sm": ["18px", {"lineHeight": "26px", "fontWeight": "600"}],
+                    "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                    "display-lg-mobile": ["28px", {"lineHeight": "34px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+            color: #191c1e;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid #e2e8f0;
+        }
+        .nav-item-active {
+            border-bottom: 2px solid #000000;
+            padding-bottom: 4px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-background min-h-screen">
+<!-- TopNavBar (Fixed) -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-container-margin h-16 bg-surface-container-lowest border-b border-outline-variant max-w-[1440px] mx-auto left-0 right-0">
+<div class="flex items-center gap-8">
+<div class="font-display-lg text-display-lg font-bold text-primary">DecisionEngine</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="font-body-md text-body-md text-primary border-b-2 border-primary pb-1 font-semibold hover:bg-surface-container-low transition-colors duration-200" href="#">Dashboard</a>
+<a class="font-body-md text-body-md text-on-secondary-container hover:bg-surface-container-low transition-colors duration-200" href="#">PM Strategy Hub</a>
+<a class="font-body-md text-body-md text-on-secondary-container hover:bg-surface-container-low transition-colors duration-200" href="#">Admin Catalog</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-container rounded-full text-[12px] font-medium text-on-surface-variant">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+                Secured Session
+            </div>
+<button class="material-symbols-outlined text-secondary hover:bg-surface-container-low p-2 rounded-full">lock</button>
+<button class="material-symbols-outlined text-secondary hover:bg-surface-container-low p-2 rounded-full">notifications</button>
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a female executive in a minimalist business suit, lit by soft studio lighting with a neutral gray background. The overall aesthetic is clean, sharp, and high-end, fitting for an enterprise dashboard profile image." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnLaTVAglz6Ne8ugvffIqDBsyuGQfUde-IYflfoQH2S2DhsMdruLPFYLkju41dbtbpzXeW0GDp2kEXfH0NjzJ-6W5j2kGb_zIQnwtQeLQVAqNvILlOC-iy54cI73WSpsc9JbqEhQabVYmQPrnjzTnt1lo3AxLRuyqxjYwi0d3cSH8kj4QTs5CUr5BIeJRwhClAKV1m285I_Cl6NaaBAt2oLufQq17QlNciqznPwFDU8ECu9quafACLvG5Ba5r1KKjEW9_HB2nh1o8"/>
+</div>
+</div>
+</header>
+<!-- SideNav (Fixed Desktop Only) -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 flex flex-col bg-surface-container-lowest border-r border-outline-variant hidden xl:flex">
+<div class="p-6">
+<div class="flex items-center gap-3 mb-8">
+<div class="w-10 h-10 rounded bg-primary flex items-center justify-center text-white font-bold">CE</div>
+<div>
+<div class="font-label-caps text-label-caps text-primary uppercase">Category Manager</div>
+<div class="text-[11px] text-secondary">Enterprise Division</div>
+</div>
+</div>
+<nav class="space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container font-semibold rounded hover:bg-surface-container transition-transform active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-caps text-label-caps">Overview</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-secondary hover:bg-surface-container transition-transform active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined">hub</span>
+<span class="font-label-caps text-label-caps">Strategy</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-secondary hover:bg-surface-container transition-transform active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-caps text-label-caps">Inventory</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-secondary hover:bg-surface-container transition-transform active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-caps text-label-caps">Analytics</span>
+</a>
+</nav>
+</div>
+<div class="mt-auto p-6 space-y-1 border-t border-outline-variant">
+<a class="flex items-center gap-3 px-4 py-2 text-secondary hover:bg-surface-container" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-caps text-label-caps">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-secondary hover:bg-surface-container" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+<span class="font-label-caps text-label-caps">Support</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="pt-24 pb-12 px-container-margin xl:ml-64 max-w-[1440px] mx-auto min-h-screen">
+<!-- Next Best Decisions Section -->
+<section class="mb-section-gap">
+<div class="flex items-center gap-4 mb-6">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<h2 class="font-headline-md text-headline-md">Next Best Decisions</h2>
+<span class="px-3 py-1 bg-secondary-container text-on-secondary-container text-[12px] font-bold rounded-full">3 Actions Recommended</span>
+</div>
+<div class="space-y-4">
+<!-- Decision Card 1 -->
+<div class="glass-card rounded p-6 flex flex-col md:flex-row items-center gap-6 hover:border-slate-400 transition-all cursor-pointer group">
+<div class="w-12 h-12 bg-slate-100 flex items-center justify-center rounded-lg border border-slate-200">
+<span class="material-symbols-outlined text-primary">security</span>
+</div>
+<div class="flex-grow">
+<div class="flex items-center gap-2 mb-1">
+<span class="font-label-caps text-label-caps text-secondary">ENDPOINT SHIELD SUITE</span>
+<span class="text-[10px] bg-surface-container-high px-2 py-0.5 rounded text-on-surface-variant font-bold">Retention &amp; Loyalty Pricing</span>
+</div>
+<p class="font-body-md text-body-md">Optimize retention pricing for Advanced Endpoint Protection (15% loyalty discount) to prevent subscription cancellations.</p>
+</div>
+<div class="flex items-center gap-12 shrink-0">
+<div class="text-right">
+<div class="text-[11px] text-secondary uppercase font-bold">Est. Impact</div>
+<div class="font-data-mono text-data-mono text-green-600">+$1,050 / mo (retrieved)</div>
+</div>
+<div class="text-right">
+<div class="text-[11px] text-secondary uppercase font-bold">Confidence</div>
+<div class="font-data-mono text-data-mono">84%</div>
+</div>
+<div class="flex items-center gap-2 border-l pl-6 border-slate-200">
+<button class="w-8 h-8 flex items-center justify-center rounded border border-slate-200 hover:bg-slate-50">
+<span class="material-symbols-outlined text-[18px]">thumb_up</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-slate-200 hover:bg-slate-50">
+<span class="material-symbols-outlined text-[18px]">thumb_down</span>
+</button>
+<button class="ml-4 w-8 h-8 flex items-center justify-center rounded-full bg-green-50 text-green-600 border border-green-200">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-full bg-red-50 text-red-600 border border-red-200">
+<span class="material-symbols-outlined text-[18px]">cancel</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Decision Card 2 -->
+<div class="glass-card rounded p-6 flex flex-col md:flex-row items-center gap-6 hover:border-slate-400 transition-all cursor-pointer group">
+<div class="w-12 h-12 bg-slate-100 flex items-center justify-center rounded-lg border border-slate-200">
+<span class="material-symbols-outlined text-primary">cloud</span>
+</div>
+<div class="flex-grow">
+<div class="flex items-center gap-2 mb-1">
+<span class="font-label-caps text-label-caps text-secondary">CLOUD SENTINEL SUITE</span>
+<span class="text-[10px] bg-surface-container-high px-2 py-0.5 rounded text-on-surface-variant font-bold">Retention &amp; Loyalty Pricing</span>
+</div>
+<p class="font-body-md text-body-md">Optimize retention pricing for Container Guard Pro (15% loyalty discount) to prevent subscription cancellations.</p>
+</div>
+<div class="flex items-center gap-12 shrink-0">
+<div class="text-right">
+<div class="text-[11px] text-secondary uppercase font-bold">Est. Impact</div>
+<div class="font-data-mono text-data-mono text-green-600">+$2,297 / mo (retrieved)</div>
+</div>
+<div class="text-right">
+<div class="text-[11px] text-secondary uppercase font-bold">Confidence</div>
+<div class="font-data-mono text-data-mono">84%</div>
+</div>
+<div class="flex items-center gap-2 border-l pl-6 border-slate-200">
+<button class="w-8 h-8 flex items-center justify-center rounded border border-slate-200 hover:bg-slate-50">
+<span class="material-symbols-outlined text-[18px]">thumb_up</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-slate-200 hover:bg-slate-50">
+<span class="material-symbols-outlined text-[18px]">thumb_down</span>
+</button>
+<button class="ml-4 w-8 h-8 flex items-center justify-center rounded-full bg-green-50 text-green-600 border border-green-200">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-full bg-red-50 text-red-600 border border-red-200">
+<span class="material-symbols-outlined text-[18px]">cancel</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Decision Card 3 -->
+<div class="glass-card rounded p-6 flex flex-col md:flex-row items-center gap-6 hover:border-slate-400 transition-all cursor-pointer group">
+<div class="w-12 h-12 bg-slate-100 flex items-center justify-center rounded-lg border border-slate-200">
+<span class="material-symbols-outlined text-primary">key</span>
+</div>
+<div class="flex-grow">
+<div class="flex items-center gap-2 mb-1">
+<span class="font-label-caps text-label-caps text-secondary">IDENTITY &amp; ACCESS SUITE</span>
+<span class="text-[10px] bg-surface-container-high px-2 py-0.5 rounded text-on-surface-variant font-bold">Price Adjustment</span>
+</div>
+<p class="font-body-md text-body-md">Adjust entry price for Multi-Factor Authentication (MFA) Basic from $5 to $6 based on high volume inelasticity.</p>
+</div>
+<div class="flex items-center gap-12 shrink-0">
+<div class="text-right">
+<div class="text-[11px] text-secondary uppercase font-bold">Est. Impact</div>
+<div class="font-data-mono text-data-mono text-green-600">+$1,508 / mo</div>
+</div>
+<div class="text-right">
+<div class="text-[11px] text-secondary uppercase font-bold">Confidence</div>
+<div class="font-data-mono text-data-mono">90%</div>
+</div>
+<div class="flex items-center gap-2 border-l pl-6 border-slate-200">
+<button class="w-8 h-8 flex items-center justify-center rounded border border-slate-200 hover:bg-slate-50">
+<span class="material-symbols-outlined text-[18px]">thumb_up</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-slate-200 hover:bg-slate-50">
+<span class="material-symbols-outlined text-[18px]">thumb_down</span>
+</button>
+<button class="ml-4 w-8 h-8 flex items-center justify-center rounded-full bg-green-50 text-green-600 border border-green-200">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-full bg-red-50 text-red-600 border border-red-200">
+<span class="material-symbols-outlined text-[18px]">cancel</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Product Suites Section -->
+<section>
+<div class="flex items-center justify-between mb-6">
+<h2 class="font-headline-md text-headline-md">Product Suites</h2>
+<button class="font-label-caps text-label-caps text-secondary border-b border-transparent hover:border-secondary transition-all">View all portfolios</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Suite Card 1 -->
+<div class="bg-white border border-outline-variant rounded p-6 hover:shadow-lg transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-slate-50 rounded">
+<span class="material-symbols-outlined text-primary text-[20px]">shield</span>
+</div>
+<span class="font-label-caps text-label-caps text-on-secondary-container">SUITE</span>
+</div>
+<div class="flex items-center gap-1.5 px-3 py-1 bg-yellow-50 text-yellow-700 border border-yellow-100 rounded text-[11px] font-bold">
+<span class="material-symbols-outlined text-[14px]">warning</span> Warning
+                        </div>
+</div>
+<h3 class="font-title-sm text-title-sm mb-2">Endpoint Shield Suite</h3>
+<p class="font-body-sm text-body-sm text-secondary mb-8 h-12 overflow-hidden">Protection for workstations, mobile devices, and servers.</p>
+<div class="grid grid-cols-3 gap-4 border-t border-slate-100 pt-4 mb-4">
+<div>
+<div class="text-[10px] text-secondary uppercase mb-1">Share of Revenue</div>
+<div class="font-data-mono text-data-mono">31.5%</div>
+</div>
+<div>
+<div class="text-[10px] text-secondary uppercase mb-1">Growth (Week)</div>
+<div class="font-data-mono text-data-mono text-green-600">+1.2%</div>
+</div>
+<div>
+<div class="text-[10px] text-secondary uppercase mb-1">Growth (Year)</div>
+<div class="font-data-mono text-data-mono text-green-600">+38.7%</div>
+</div>
+</div>
+<button class="w-full py-2 flex items-center justify-center gap-2 text-primary font-semibold text-sm hover:bg-slate-50 rounded">
+                        Analyze details <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+<!-- Suite Card 2 -->
+<div class="bg-white border border-outline-variant rounded p-6 hover:shadow-lg transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-slate-50 rounded">
+<span class="material-symbols-outlined text-primary text-[20px]">cloud_queue</span>
+</div>
+<span class="font-label-caps text-label-caps text-on-secondary-container">SUITE</span>
+</div>
+<div class="flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-700 border border-red-100 rounded text-[11px] font-bold">
+<span class="material-symbols-outlined text-[14px]">cancel</span> Critical
+                        </div>
+</div>
+<h3 class="font-title-sm text-title-sm mb-2">Cloud Sentinel Suite</h3>
+<p class="font-body-sm text-body-sm text-secondary mb-8 h-12 overflow-hidden">Cloud infrastructure security posture and container guard.</p>
+<div class="grid grid-cols-3 gap-4 border-t border-slate-100 pt-4 mb-4">
+<div>
+<div class="text-[10px] text-secondary uppercase mb-1">Share of Revenue</div>
+<div class="font-data-mono text-data-mono">29.2%</div>
+</div>
+<div>
+<div class="text-[10px] text-secondary uppercase mb-1">Growth (Week)</div>
+<div class="font-data-mono text-data-mono text-red-600">-1.7%</div>
+</div>
+<div>
+<div class="text-[10px] text-secondary uppercase mb-1">Growth (Year)</div>
+<div class="font-data-mono text-data-mono text-red-600">-7.5%</div>
+</div>
+</div>
+<button class="w-full py-2 flex items-center justify-center gap-2 text-primary font-semibold text-sm hover:bg-slate-50 rounded">
+                        Analyze details <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+<!-- Suite Card 3 -->
+<div class="bg-white border border-outline-variant rounded p-6 hover:shadow-lg transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-slate-50 rounded">
+<span class="material-symbols-outlined text-primary text-[20px]">key</span>
+</div>
+<span class="font-label-caps text-label-caps text-on-secondary-container">SUITE</span>
+</div>
+<div class="flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 border border-green-100 rounded text-[11px] font-bold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Good
+                        </div>
+</div>
+<h3 class="font-title-sm text-title-sm mb-2">Identity &amp; Access Suite</h3>
+<p class="font-body-sm text-body-sm text-secondary mb-8 h-12 overflow-hidden">Multi-factor authentication, single sign-on, and Zero Trust access.</p>
+<div class="grid grid-cols-3 gap-4 border-t border-slate-100 pt-4 mb-4">
+<div>
+<div class="text-[10px] text-secondary uppercase mb-1">Share of Revenue</div>
+<div class="font-data-mono text-data-mono">39.3%</div>
+</div>
+<div>
+<div class="text-[10px] text-secondary uppercase mb-1">Growth (Week)</div>
+<div class="font-data-mono text-data-mono text-green-600">+7.9%</div>
+</div>
+<div>
+<div class="text-[10px] text-secondary uppercase mb-1">Growth (Year)</div>
+<div class="font-data-mono text-data-mono text-green-600">+92.5%</div>
+</div>
+</div>
+<button class="w-full py-2 flex items-center justify-center gap-2 text-primary font-semibold text-sm hover:bg-slate-50 rounded">
+                        Analyze details <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Feedback FAB -->
+<button class="fixed bottom-6 right-6 flex items-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-full shadow-xl hover:bg-slate-900 transition-all active:scale-95 group z-[100]">
+<span class="material-symbols-outlined text-[20px]">warning</span>
+<span class="font-label-caps text-label-caps">Something needs improvement? Tell us!</span>
+</button>
+<script>
+        // Simple micro-interaction for decision cards
+        document.querySelectorAll('.glass-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.classList.add('translate-y-[-2px]');
+                card.style.boxShadow = '0 10px 30px -10px rgba(15, 23, 42, 0.1)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.classList.remove('translate-y-[-2px]');
+                card.style.boxShadow = 'none';
+            });
+        });
+    </script>
+</body></html>
