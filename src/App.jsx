@@ -183,31 +183,6 @@ export default function App() {
         </div>
 
         <div className="nav-actions">
-          <div className="session-badge">
-            <span className="session-dot"></span>
-            Secured Session
-          </div>
-          <button 
-            className="material-symbols-outlined text-secondary hover:bg-surface-container-low p-2 rounded-full" 
-            style={{ padding: '0.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            title="Lock system"
-            onClick={() => { setIsLoggedIn(false); setCurrentView('DASHBOARD'); setSelectedSuiteId(null); }}
-          >
-            <Lock size={18} />
-          </button>
-          <button 
-            className="material-symbols-outlined text-secondary hover:bg-surface-container-low p-2 rounded-full" 
-            style={{ padding: '0.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            title="Notifications"
-          >
-            <Bell size={18} />
-          </button>
-          <div className="profile-avatar">
-            <img 
-              alt="A professional headshot of a female executive in a minimalist business suit, lit by soft studio lighting with a neutral gray background." 
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnLaTVAglz6Ne8ugvffIqDBsyuGQfUde-IYflfoQH2S2DhsMdruLPFYLkju41dbtbpzXeW0GDp2kEXfH0NjzJ-6W5j2kGb_zIQnwtQeLQVAqNvILlOC-iy54cI73WSpsc9JbqEhQabVYmQPrnjzTnt1lo3AxLRuyqxjYwi0d3cSH8kj4QTs5CUr5BIeJRwhClAKV1m285I_Cl6NaaBAt2oLufQq17QlNciqznPwFDU8ECu9quafACLvG5Ba5r1KKjEW9_HB2nh1o8" 
-            />
-          </div>
         </div>
       </header>
 
