@@ -9,7 +9,9 @@ import {
   TrendingUp, 
   Info,
   Users,
-  Percent
+  Percent,
+  Trash2,
+  Plus
 } from 'lucide-react';
 
 export default function ElasticitySimulator({ suiteId, database, onBack, onSuiteChange }) {
@@ -29,16 +31,42 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
 
   const getInitialSimState = (prodId) => {
     if (prodId === 'all') {
+      const avgPrice = getAvgSuitePrice();
+      const avgVolume = getAvgSuiteVolume();
       return {
-        price: getAvgSuitePrice(),
+        price: avgPrice,
         elasticity: -1.2,
         churnSensitivity: 0.4,
+        mode: 'formula',
+        customPoints: [
+          { price: Math.round(0.5 * avgPrice), volume: Math.round(1.5 * avgVolume) },
+          { price: Math.round(0.75 * avgPrice), volume: Math.round(1.25 * avgVolume) },
+          { price: avgPrice, volume: avgVolume },
+          { price: Math.round(1.25 * avgPrice), volume: Math.round(0.85 * avgVolume) },
+          { price: Math.round(1.5 * avgPrice), volume: Math.round(0.9 * avgVolume) },
+          { price: Math.round(1.75 * avgPrice), volume: Math.round(0.5 * avgVolume) },
+          { price: Math.round(2.0 * avgPrice), volume: Math.round(0.3 * avgVolume) }
+        ]
       };
     }
     
     const prod = suiteProducts.find(p => p.id === prodId);
     if (!prod) {
-      return { price: 40, elasticity: -1.2, churnSensitivity: 0.4 };
+      return { 
+        price: 40, 
+        elasticity: -1.2, 
+        churnSensitivity: 0.4,
+        mode: 'formula',
+        customPoints: [
+          { price: 20, volume: 150 },
+          { price: 30, volume: 125 },
+          { price: 40, volume: 100 },
+          { price: 50, volume: 85 },
+          { price: 60, volume: 90 },
+          { price: 70, volume: 50 },
+          { price: 80, volume: 30 }
+        ]
+      };
     }
 
     // Assign defaults based on product tiers
@@ -55,6 +83,16 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
       price: prod.price,
       elasticity,
       churnSensitivity: 0.4,
+      mode: 'formula',
+      customPoints: [
+        { price: Math.round(0.5 * prod.price), volume: Math.round(1.5 * prod.weeklyVolume) },
+        { price: Math.round(0.75 * prod.price), volume: Math.round(1.25 * prod.weeklyVolume) },
+        { price: prod.price, volume: prod.weeklyVolume },
+        { price: Math.round(1.25 * prod.price), volume: Math.round(0.85 * prod.weeklyVolume) },
+        { price: Math.round(1.5 * prod.price), volume: Math.round(0.9 * prod.weeklyVolume) },
+        { price: Math.round(1.75 * prod.price), volume: Math.round(0.5 * prod.weeklyVolume) },
+        { price: Math.round(2.0 * prod.price), volume: Math.round(0.3 * prod.weeklyVolume) }
+      ]
     };
   };
 
@@ -69,11 +107,16 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
   const [dragMode, setDragMode] = useState(null); // 'price' | 'elasticity' | null
   const svgRef = useRef(null);
 
+  // States for adding custom price points
+  const [newPointPrice, setNewPointPrice] = useState('');
+  const [newPointVolume, setNewPointVolume] = useState('');
+
   // Get active values
   const currentSimValues = simValuesMap[selectedSimProduct] || getInitialSimState(selectedSimProduct);
   const simPrice = currentSimValues.price;
   const simElasticity = currentSimValues.elasticity;
   const simChurnSensitivity = currentSimValues.churnSensitivity;
+  const currentMode = currentSimValues.mode || 'formula';
 
   // Baseline values based on selection
   let baselinePrice = 40;
@@ -103,15 +146,56 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
   const minPrice = 0.5 * baselinePrice;
   const maxPrice = 2.0 * baselinePrice;
   const peakVolume = baselineVolume * Math.pow(0.5, simElasticityNum);
-  const maxChartVol = Math.max(2.0 * baselineVolume, peakVolume * 1.05);
 
-  // 1. Constant Elasticity of Demand: Q = Q0 * (P / P0)^E
+  // Dynamic max custom volume for scaling
+  const maxCustomVol = currentMode === 'custom' && currentSimValues.customPoints && currentSimValues.customPoints.length > 0
+    ? Math.max(...currentSimValues.customPoints.map(pt => pt.volume))
+    : 0;
+  const maxChartVol = Math.max(
+    2.0 * baselineVolume, 
+    currentMode === 'custom' ? maxCustomVol * 1.15 : peakVolume * 1.05
+  );
+
+  // Helper function for linear interpolation of custom curve points
+  const getInterpolatedVolume = (pVal) => {
+    const points = currentSimValues.customPoints || [];
+    if (points.length === 0) return baselineVolume;
+    
+    // Sort points by price to ensure correct segment search
+    const sorted = [...points].sort((a, b) => a.price - b.price);
+    
+    if (pVal <= sorted[0].price) {
+      return sorted[0].volume;
+    }
+    
+    if (pVal >= sorted[sorted.length - 1].price) {
+      return sorted[sorted.length - 1].volume;
+    }
+    
+    // Interpolate within segments
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const pA = sorted[i].price;
+      const vA = sorted[i].volume;
+      const pB = sorted[i + 1].price;
+      const vB = sorted[i + 1].volume;
+      
+      if (pVal >= pA && pVal <= pB) {
+        if (pB === pA) return vA;
+        return vA + ((pVal - pA) / (pB - pA)) * (vB - vA);
+      }
+    }
+    
+    return baselineVolume;
+  };
+
+  // 1. Demand License Volume: Formula-based or Piecewise Linear custom interpolation
   const priceRatio = baselinePrice > 0 ? (simPriceNum / baselinePrice) : 1;
-  const simulatedVolume = baselineVolume * Math.pow(priceRatio, simElasticityNum);
+  const simulatedVolume = currentMode === 'custom'
+    ? getInterpolatedVolume(simPriceNum)
+    : baselineVolume * Math.pow(priceRatio, simElasticityNum);
   const volumeDelta = simulatedVolume - baselineVolume;
 
-  // 2. Churn Sensitivity: Churn = Churn0 * (1 + Sensitivity * (max(0, P - P0) / P0)^2)
-  // Churn only increases quadratically for price hikes; lowering price does not reduce churn below baseline
+  // 2. Churn Sensitivity
   const priceChangeFraction = baselinePrice > 0 ? Math.max(0, (simPriceNum - baselinePrice) / baselinePrice) : 0;
   const simulatedChurn = Math.max(0.5, Math.min(50.0, baselineChurn * (1 + simChurnSensitivityNum * Math.pow(priceChangeFraction, 2))));
   const churnDelta = simulatedChurn - baselineChurn;
@@ -160,21 +244,17 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
 
   const handleOptimize = () => {
     console.log('handleOptimize triggered (Maximize Lifetime Revenue)');
-    console.log('baselinePrice:', baselinePrice);
-    console.log('baselineVolume:', baselineVolume);
-    console.log('baselineChurn:', baselineChurn);
-    console.log('simElasticityNum:', simElasticityNum);
-    console.log('simChurnSensitivityNum:', simChurnSensitivityNum);
     
-    const minPrice = Math.round(0.5 * baselinePrice);
-    const maxPrice = Math.round(2.0 * baselinePrice);
+    const minPriceVal = Math.round(0.5 * baselinePrice);
+    const maxPriceVal = Math.round(2.0 * baselinePrice);
     
     let bestPrice = baselinePrice;
     let maxLtvRevenue = -Infinity;
     
-    for (let p = minPrice; p <= maxPrice; p++) {
-      const priceRatio = baselinePrice > 0 ? (p / baselinePrice) : 1;
-      const vol = baselineVolume * Math.pow(priceRatio, simElasticityNum);
+    for (let p = minPriceVal; p <= maxPriceVal; p++) {
+      const vol = currentMode === 'custom'
+        ? getInterpolatedVolume(p)
+        : baselineVolume * Math.pow(p / baselinePrice, simElasticityNum);
       const priceChangeFraction = baselinePrice > 0 ? Math.max(0, (p - baselinePrice) / baselinePrice) : 0;
       const churn = Math.max(0.5, Math.min(50.0, baselineChurn * (1 + simChurnSensitivityNum * Math.pow(priceChangeFraction, 2))));
       const ltvVal = churn > 0 ? p / (churn / 100) : 0;
@@ -188,6 +268,38 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
     
     console.log('Calculated bestPrice:', bestPrice);
     setSimValue('price', bestPrice);
+  };
+
+  const handleAddPoint = () => {
+    const priceVal = parseInt(newPointPrice);
+    const volumeVal = parseInt(newPointVolume);
+    
+    if (isNaN(priceVal) || isNaN(volumeVal)) {
+      alert('Please enter valid integer values for Price and Volume.');
+      return;
+    }
+    
+    if (priceVal < minPrice || priceVal > maxPrice) {
+      alert(`Price must be between $${minPrice} and $${maxPrice} (bounds of the chart).`);
+      return;
+    }
+    
+    const currentPoints = currentSimValues.customPoints || [];
+    if (currentPoints.some(pt => pt.price === priceVal)) {
+      alert('A price test point already exists for this price. Delete it first to re-add.');
+      return;
+    }
+    
+    const updatedPoints = [...currentPoints, { price: priceVal, volume: volumeVal }].sort((a, b) => a.price - b.price);
+    setSimValue('customPoints', updatedPoints);
+    setNewPointPrice('');
+    setNewPointVolume('');
+  };
+
+  const handleDeletePoint = (priceToDelete) => {
+    const currentPoints = currentSimValues.customPoints || [];
+    const updatedPoints = currentPoints.filter(pt => pt.price !== priceToDelete);
+    setSimValue('customPoints', updatedPoints);
   };
 
   // Dragging interaction for the SVG chart
@@ -217,6 +329,7 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
       // Dragging the price point ONLY changes the price. The elasticity (and thus the curve itself) remains completely static.
       setSimValue('price', Number(draggedPrice.toFixed(2)));
     } else if (mode === 'elasticity') {
+      if (currentMode === 'custom') return;
       // Dragging the curve up/down changes the elasticity directly.
       // Top of chart (y=30) maps to inelastic (-0.1), bottom (y=220) maps to elastic (-3.0).
       let pct = (220 - mouseY) / 190;
@@ -250,20 +363,27 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
   // Generate SVG path for the constant elasticity curve
   const getCurvePathD = () => {
     let points = [];
-    const steps = 40;
-
-    for (let i = 0; i <= steps; i++) {
-      const p = minPrice + (i / steps) * (maxPrice - minPrice);
-      const q = baselineVolume * Math.pow(p / baselinePrice, simElasticityNum);
-
-      const x = 70 + ((p - minPrice) / (maxPrice - minPrice)) * 460;
-      const y = 220 - (q / maxChartVol) * 190;
-
-      if (y >= 10 && y <= 240) {
+    
+    if (currentMode === 'custom') {
+      const sortedPoints = [...(currentSimValues.customPoints || [])].sort((a, b) => a.price - b.price);
+      sortedPoints.forEach(pt => {
+        const x = 70 + ((pt.price - minPrice) / (maxPrice - minPrice)) * 460;
+        const y = 220 - (pt.volume / maxChartVol) * 190;
         points.push(`${x},${y}`);
+      });
+    } else {
+      const steps = 40;
+      for (let i = 0; i <= steps; i++) {
+        const p = minPrice + (i / steps) * (maxPrice - minPrice);
+        const q = baselineVolume * Math.pow(p / baselinePrice, simElasticityNum);
+        const x = 70 + ((p - minPrice) / (maxPrice - minPrice)) * 460;
+        const y = 220 - (q / maxChartVol) * 190;
+        if (y >= 10 && y <= 240) {
+          points.push(`${x},${y}`);
+        }
       }
     }
-
+    
     return points.length > 0 ? `M ${points.join(' L ')}` : '';
   };
 
@@ -366,6 +486,44 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
               </div>
             </div>
 
+            {/* Curve Mode Switcher */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '1.75rem' }}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Curve Type Mode:</label>
+              <div style={{ display: 'flex', border: '1px solid var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
+                <button
+                  onClick={() => setSimValue('mode', 'formula')}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    backgroundColor: currentMode === 'formula' ? 'var(--color-primary)' : 'white',
+                    color: currentMode === 'formula' ? 'white' : 'var(--text-secondary)',
+                    textAlign: 'center',
+                    border: 'none',
+                    borderRadius: 0,
+                  }}
+                >
+                  Analytical Curve
+                </button>
+                <button
+                  onClick={() => setSimValue('mode', 'custom')}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    backgroundColor: currentMode === 'custom' ? 'var(--color-primary)' : 'white',
+                    color: currentMode === 'custom' ? 'white' : 'var(--text-secondary)',
+                    textAlign: 'center',
+                    border: 'none',
+                    borderRadius: 0,
+                  }}
+                >
+                  Custom Price Tests
+                </button>
+              </div>
+            </div>
 
             {/* Slider Section: Price Adjustment */}
             <div style={{ marginBottom: '1.75rem' }}>
@@ -454,67 +612,166 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
               </div>
             </div>
 
-            {/* Slider Section: Elasticity Curves */}
-            <div style={{ marginBottom: '1.75rem' }}>
-              <h4 style={{ fontSize: '0.9rem', color: 'var(--color-primary-dark)', borderBottom: '1px dashed var(--border-color)', pb: '0.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>
-                <span>2. Price Elasticity of Demand</span>
-              </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                {/* Elasticity Coefficient */}
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                    <span className="tooltip-container" data-tooltip="Price elasticity of demand (ε). A negative scaling factor representing how demand volume changes in response to price changes." style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Elasticity Coefficient (ε)</span>
-                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', textAlign: 'left' }}>Negative value (higher is more sensitive)</span>
+            {currentMode === 'formula' ? (
+              /* Slider Section: Elasticity Curves */
+              <div style={{ marginBottom: '1.75rem' }}>
+                <h4 style={{ fontSize: '0.9rem', color: 'var(--color-primary-dark)', borderBottom: '1px dashed var(--border-color)', pb: '0.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>
+                  <span>2. Price Elasticity of Demand</span>
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {/* Elasticity Coefficient */}
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                      <span className="tooltip-container" data-tooltip="Price elasticity of demand (ε). A negative scaling factor representing how demand volume changes in response to price changes." style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Elasticity Coefficient (ε)</span>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', textAlign: 'left' }}>Negative value (higher is more sensitive)</span>
+                        </div>
+                        <HelpCircle size={12} style={{ color: 'var(--text-muted)' }} />
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <input 
+                          type="number"
+                          min="-3.0" 
+                          max="-0.1" 
+                          step="0.05"
+                          value={simElasticity === 0 ? '' : simElasticity}
+                          onChange={(e) => setSimValue('elasticity', e.target.value === '' ? '' : parseFloat(e.target.value))}
+                          onBlur={(e) => {
+                            let val = parseFloat(e.target.value) || -1.2;
+                            val = Math.max(-3.0, Math.min(-0.1, val));
+                            setSimValue('elasticity', Number(val.toFixed(2)));
+                          }}
+                          style={{
+                            width: '65px',
+                            padding: '0.15rem 0.35rem',
+                            fontSize: '0.85rem',
+                            fontWeight: 700,
+                            color: 'var(--color-primary)',
+                            textAlign: 'right',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '6px',
+                            backgroundColor: '#ffffff',
+                            outline: 'none',
+                            boxShadow: 'var(--shadow-inset)'
+                          }}
+                        />
                       </div>
-                      <HelpCircle size={12} style={{ color: 'var(--text-muted)' }} />
-                    </span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                      <input 
-                        type="number"
-                        min="-3.0" 
-                        max="-0.1" 
-                        step="0.05"
-                        value={simElasticity === 0 ? '' : simElasticity}
-                        onChange={(e) => setSimValue('elasticity', e.target.value === '' ? '' : parseFloat(e.target.value))}
-                        onBlur={(e) => {
-                          let val = parseFloat(e.target.value) || -1.2;
-                          val = Math.max(-3.0, Math.min(-0.1, val));
-                          setSimValue('elasticity', Number(val.toFixed(2)));
-                        }}
-                        style={{
-                          width: '65px',
-                          padding: '0.15rem 0.35rem',
-                          fontSize: '0.85rem',
-                          fontWeight: 700,
-                          color: 'var(--color-primary)',
-                          textAlign: 'right',
-                          border: '1px solid var(--border-color)',
-                          borderRadius: '6px',
-                          backgroundColor: '#ffffff',
-                          outline: 'none',
-                          boxShadow: 'var(--shadow-inset)'
-                        }}
-                      />
                     </div>
-                  </div>
-                  <input 
-                    type="range" 
-                    min="-3.0" 
-                    max="-0.1" 
-                    step="0.05"
-                    value={simElasticityNum} 
-                    onChange={(e) => setSimValue('elasticity', parseFloat(e.target.value))}
-                    className="range-input" 
-                  />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                    <span>Highly Elastic (-3.0)</span>
-                    <span>Inelastic (-0.1)</span>
+                    <input 
+                      type="range" 
+                      min="-3.0" 
+                      max="-0.1" 
+                      step="0.05"
+                      value={simElasticityNum} 
+                      onChange={(e) => setSimValue('elasticity', parseFloat(e.target.value))}
+                      className="range-input" 
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                      <span>Highly Elastic (-3.0)</span>
+                      <span>Inelastic (-0.1)</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              /* Custom Price Test Points Editor */
+              <div style={{ marginBottom: '1.75rem' }}>
+                <h4 style={{ fontSize: '0.9rem', color: 'var(--color-primary-dark)', borderBottom: '1px dashed var(--border-color)', pb: '0.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>
+                  <span>2. Custom Price Test Points</span>
+                </h4>
+                
+                {/* Form to add a new point */}
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'flex-end', backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Price ($):</label>
+                    <input 
+                      type="number"
+                      placeholder={`$${Math.round(minPrice)} - $${Math.round(maxPrice)}`}
+                      className="form-control"
+                      style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem', width: '100%', border: '1px solid var(--border-color)', borderRadius: '6px' }}
+                      value={newPointPrice}
+                      onChange={(e) => setNewPointPrice(e.target.value)}
+                    />
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Volume (Licenses):</label>
+                    <input 
+                      type="number"
+                      placeholder="e.g. 120"
+                      className="form-control"
+                      style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem', width: '100%', border: '1px solid var(--border-color)', borderRadius: '6px' }}
+                      value={newPointVolume}
+                      onChange={(e) => setNewPointVolume(e.target.value)}
+                    />
+                  </div>
+                  <button 
+                    onClick={handleAddPoint}
+                    className="btn btn-secondary"
+                    style={{ 
+                      padding: '0.4rem 0.75rem', 
+                      fontSize: '0.85rem', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '0.25rem', 
+                      backgroundColor: 'var(--color-primary-light)', 
+                      borderColor: 'var(--color-primary-border)',
+                      color: 'var(--color-primary)',
+                      fontWeight: '700',
+                      borderRadius: '6px'
+                    }}
+                  >
+                    <Plus size={14} />
+                    Add
+                  </button>
+                </div>
+
+                {/* Points Table List */}
+                <div style={{ maxHeight: '180px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '1px solid var(--border-color)' }}>
+                        <th style={{ padding: '0.5rem' }}>Price ($)</th>
+                        <th style={{ padding: '0.5rem' }}>Volume</th>
+                        <th style={{ padding: '0.5rem' }}>MRR</th>
+                        <th style={{ padding: '0.5rem', textAlign: 'right' }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(currentSimValues.customPoints || []).length === 0 ? (
+                        <tr>
+                          <td colSpan="4" style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>No test points defined yet.</td>
+                        </tr>
+                      ) : (
+                        [...(currentSimValues.customPoints || [])]
+                          .sort((a, b) => a.price - b.price)
+                          .map((pt) => (
+                            <tr key={pt.price} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                              <td style={{ padding: '0.5rem', fontWeight: 700 }}>${pt.price}</td>
+                              <td style={{ padding: '0.5rem' }}>{pt.volume}</td>
+                              <td style={{ padding: '0.5rem' }}>${(pt.price * pt.volume).toLocaleString()}</td>
+                              <td style={{ padding: '0.5rem', textAlign: 'right' }}>
+                                <button 
+                                  onClick={() => handleDeletePoint(pt.price)}
+                                  style={{ color: 'var(--color-danger)', border: 'none', background: 'none', padding: '0.15rem 0.35rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                  title="Delete point"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                { (currentSimValues.customPoints || []).length < 2 && (
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.7rem', color: 'var(--color-danger)', fontWeight: 600 }}>
+                    ⚠️ Plotting requires at least 2 points.
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Slider Section: Churn Sensitivity */}
             <div>
@@ -707,7 +964,7 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
                   fill="none" 
                   stroke="transparent" 
                   strokeWidth="15" 
-                  style={{ cursor: 'ns-resize' }}
+                  style={{ cursor: currentMode === 'custom' ? 'default' : 'ns-resize', pointerEvents: currentMode === 'custom' ? 'none' : 'auto' }}
                   onMouseDown={(e) => handleStartDrag(e, 'elasticity')}
                 />
 
@@ -719,6 +976,35 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
                   strokeWidth="2.5" 
                   style={{ pointerEvents: 'none', transition: isDragging ? 'none' : 'd 0.2s ease-out' }}
                 />
+
+                {/* Visual Custom Price Test Points */}
+                {currentMode === 'custom' && (currentSimValues.customPoints || []).map((pt, idx) => {
+                  const cx = 70 + ((pt.price - minPrice) / (maxPrice - minPrice)) * 460;
+                  const cy = 220 - (pt.volume / maxChartVol) * 190;
+                  return (
+                    <g key={idx}>
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r="4"
+                        fill="var(--color-primary)"
+                        stroke="#ffffff"
+                        strokeWidth="1.5"
+                      />
+                      <text 
+                        x={cx} 
+                        y={cy - 8} 
+                        textAnchor="middle" 
+                        fill="var(--text-secondary)" 
+                        fontSize="8" 
+                        fontWeight="700"
+                        style={{ pointerEvents: 'none' }}
+                      >
+                        ${pt.price}
+                      </text>
+                    </g>
+                  );
+                })}
 
                 {/* Draggable Active Handle Dot */}
                 {dotX >= 70 && dotX <= 530 && dotY >= 10 && dotY <= 230 && (
