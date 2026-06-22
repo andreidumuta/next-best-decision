@@ -488,7 +488,7 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
 
             {/* Curve Mode Switcher */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '1.75rem' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Curve Type Mode:</label>
+              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Price chart type:</label>
               <div style={{ display: 'flex', border: '1px solid var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
                 <button
                   onClick={() => setSimValue('mode', 'formula')}
@@ -504,7 +504,7 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
                     borderRadius: 0,
                   }}
                 >
-                  Analytical Curve
+                  Elasticity coefficient
                 </button>
                 <button
                   onClick={() => setSimValue('mode', 'custom')}
@@ -520,7 +520,7 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
                     borderRadius: 0,
                   }}
                 >
-                  Custom Price Tests
+                  Custom elasticity
                 </button>
               </div>
             </div>
