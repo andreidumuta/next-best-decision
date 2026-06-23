@@ -104,7 +104,8 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
   });
 
   const [isDragging, setIsDragging] = useState(false);
-  const [dragMode, setDragMode] = useState(null); // 'price' | 'elasticity' | null
+  const [dragMode, setDragMode] = useState(null); // 'price' | 'elasticity' | 'custom-point' | null
+  const [draggedPointIdx, setDraggedPointIdx] = useState(null);
   const svgRef = useRef(null);
 
   // States for adding custom price points
@@ -303,15 +304,18 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
   };
 
   // Dragging interaction for the SVG chart
-  const handleStartDrag = (e, mode) => {
+  const handleStartDrag = (e, mode, pointIdx = null) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
     setDragMode(mode);
-    handleDragMove(e, mode);
+    if (mode === 'custom-point') {
+      setDraggedPointIdx(pointIdx);
+    }
+    handleDragMove(e, mode, pointIdx);
   };
 
-  const handleDragMove = (e, mode) => {
+  const handleDragMove = (e, mode, pointIdx = null) => {
     if (!svgRef.current) return;
     const rect = svgRef.current.getBoundingClientRect();
     const width = rect.width;
@@ -347,6 +351,43 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
           }
         };
       });
+    } else if (mode === 'custom-point') {
+      const idx = pointIdx !== null ? pointIdx : draggedPointIdx;
+      if (idx === null || idx === undefined) return;
+
+      setSimValuesMap(prev => {
+        const current = prev[selectedSimProduct] || getInitialSimState(selectedSimProduct);
+        const currentPoints = [...(current.customPoints || [])];
+        
+        if (idx >= 0 && idx < currentPoints.length) {
+          // Boundary prices to keep order stable and prevent points from crossing
+          const prevPrice = idx > 0 ? currentPoints[idx - 1].price : minPrice;
+          const nextPrice = idx < currentPoints.length - 1 ? currentPoints[idx + 1].price : maxPrice;
+          
+          let constrainedPrice = Math.round(draggedPrice);
+          const lowerBound = idx > 0 ? prevPrice + 1 : minPrice;
+          const upperBound = idx < currentPoints.length - 1 ? nextPrice - 1 : maxPrice;
+          constrainedPrice = Math.max(lowerBound, Math.min(upperBound, constrainedPrice));
+
+          // Calculate and constrain volume based on vertical mouse position
+          let draggedVol = ((220 - mouseY) / 190) * maxChartVol;
+          draggedVol = Math.max(0, Math.min(maxChartVol, draggedVol));
+          const constrainedVol = Math.round(draggedVol);
+
+          currentPoints[idx] = {
+            price: constrainedPrice,
+            volume: constrainedVol
+          };
+        }
+
+        return {
+          ...prev,
+          [selectedSimProduct]: {
+            ...current,
+            customPoints: currentPoints
+          }
+        };
+      });
     }
   };
 
@@ -358,6 +399,7 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
   const handleSvgMouseUp = () => {
     setIsDragging(false);
     setDragMode(null);
+    setDraggedPointIdx(null);
   };
 
   // Generate SVG path for the constant elasticity curve
@@ -912,7 +954,7 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
               <svg 
                 ref={svgRef}
                 viewBox="0 0 600 250" 
-                style={{ width: '100%', height: 'auto', maxWidth: '580px', backgroundColor: '#fcfdfe', border: '1px solid var(--border-light)', borderRadius: '8px', cursor: isDragging ? (dragMode === 'price' ? 'ew-resize' : 'ns-resize') : 'default', userSelect: 'none' }}
+                style={{ width: '100%', height: 'auto', maxWidth: '580px', backgroundColor: '#fcfdfe', border: '1px solid var(--border-light)', borderRadius: '8px', cursor: isDragging ? (dragMode === 'price' ? 'ew-resize' : (dragMode === 'custom-point' ? 'move' : 'ns-resize')) : 'default', userSelect: 'none' }}
                 onMouseMove={handleSvgMouseMove}
               >
                 {/* Horizontal grid lines */}
@@ -981,13 +1023,26 @@ export default function ElasticitySimulator({ suiteId, database, onBack, onSuite
                 {currentMode === 'custom' && (currentSimValues.customPoints || []).map((pt, idx) => {
                   const cx = 70 + ((pt.price - minPrice) / (maxPrice - minPrice)) * 460;
                   const cy = 220 - (pt.volume / maxChartVol) * 190;
+                  const isThisPointDragged = isDragging && dragMode === 'custom-point' && draggedPointIdx === idx;
                   return (
-                    <g key={idx}>
+                    <g 
+                      key={idx} 
+                      style={{ cursor: isThisPointDragged ? 'grabbing' : 'grab' }}
+                      onMouseDown={(e) => handleStartDrag(e, 'custom-point', idx)}
+                    >
+                      {/* Transparent outer hitbox for easy grabbing */}
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r="12"
+                        fill="transparent"
+                      />
+                      {/* Interactive Point circle */}
                       <circle
                         cx={cx}
                         cy={cy}
                         r="4"
-                        fill="var(--color-primary)"
+                        fill={isThisPointDragged ? 'var(--color-success)' : 'var(--color-primary)'}
                         stroke="#ffffff"
                         strokeWidth="1.5"
                       />
